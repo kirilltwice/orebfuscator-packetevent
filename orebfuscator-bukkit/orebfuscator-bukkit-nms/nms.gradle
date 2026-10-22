@@ -13,13 +13,12 @@ if (!project.hasProperty("nmsVersion")) {
 }
 
 if (!project.hasProperty("javaVersion")) {
-    ext.javaVersion = 17
+    ext.javaVersion = 25
 }
 
 def resolvedJavaVersion = project.property("javaVersion").toString().toInteger()
 
 dependencies {
-    compileOnly(libs.protocollib)
     compileOnly(project(":orebfuscator-bukkit:orebfuscator-bukkit-nms"))
     compileOnly("org.spigotmc:spigot:${nmsVersion}:remapped-mojang")
 }
@@ -29,7 +28,7 @@ java {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.release = 17
+    options.release = 25
 }
 
 configurations.named("compileClasspath") {
@@ -77,7 +76,7 @@ configurations {
             attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
             attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
             attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
-            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
             attribute(bundlingAttr, "mojang-mapped")
         }
     }
@@ -88,7 +87,7 @@ configurations {
             attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
             attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
             attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
-            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
             attribute(bundlingAttr, "spigot-mapped")
         }
     }

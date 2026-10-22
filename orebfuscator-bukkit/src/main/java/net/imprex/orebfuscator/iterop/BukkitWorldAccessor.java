@@ -1,12 +1,9 @@
 package net.imprex.orebfuscator.iterop;
 
-import com.comphenix.protocol.reflect.accessors.Accessors;
-import com.comphenix.protocol.reflect.accessors.MethodAccessor;
 import dev.imprex.orebfuscator.config.api.WorldConfigBundle;
 import dev.imprex.orebfuscator.interop.ChunkAccessor;
 import dev.imprex.orebfuscator.interop.ChunkPacketAccessor;
 import dev.imprex.orebfuscator.interop.WorldAccessor;
-import dev.imprex.orebfuscator.logging.OfcLogger;
 import dev.imprex.orebfuscator.obfuscation.ObfuscationRequest;
 import dev.imprex.orebfuscator.util.BlockPos;
 import dev.imprex.orebfuscator.util.ChunkDirection;
@@ -16,44 +13,12 @@ import java.util.concurrent.CompletableFuture;
 import net.imprex.orebfuscator.Orebfuscator;
 import net.imprex.orebfuscator.OrebfuscatorCompatibility;
 import net.imprex.orebfuscator.OrebfuscatorNms;
-import net.imprex.orebfuscator.util.MinecraftVersion;
 import org.bukkit.World;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public class BukkitWorldAccessor implements WorldAccessor {
-
-  private static final boolean HAS_DYNAMIC_HEIGHT = MinecraftVersion.isAtOrAbove("1.17");
-
-  private static final @Nullable MethodAccessor WORLD_GET_MAX_HEIGHT = getWorldMethod("getMaxHeight");
-  private static final @Nullable MethodAccessor WORLD_GET_MIN_HEIGHT = getWorldMethod("getMinHeight");
-
-  private static @Nullable MethodAccessor getWorldMethod(String methodName) {
-    if (HAS_DYNAMIC_HEIGHT) {
-      MethodAccessor methodAccessor = getWorldMethod0(World.class, methodName);
-      if (methodAccessor == null) {
-        throw new RuntimeException("unable to find method: World::" + methodName + "()");
-      }
-      OfcLogger.debug("HeightAccessor found method: World::" + methodName + "()");
-      return methodAccessor;
-    }
-    return null;
-  }
-
-  private static @Nullable MethodAccessor getWorldMethod0(Class<?> target, String methodName) {
-    try {
-      return Accessors.getMethodAccessor(target, methodName);
-    } catch (IllegalArgumentException e) {
-      for (Class<?> iterface : target.getInterfaces()) {
-        MethodAccessor methodAccessor = getWorldMethod0(iterface, methodName);
-        if (methodAccessor != null) {
-          return methodAccessor;
-        }
-      }
-    }
-    return null;
-  }
 
   private static int blockToSectionCoord(int block) {
     return block >> 4;
@@ -65,27 +30,24 @@ public class BukkitWorldAccessor implements WorldAccessor {
   private final int maxHeight;
   private final int minHeight;
 
-  private @Nullable WorldConfigBundle worldConfigBundle;
+  private volatile @Nullable WorldConfigBundle worldConfigBundle;
 
   BukkitWorldAccessor(World world, Orebfuscator orebfuscator) {
     this.world = Objects.requireNonNull(world);
     this.orebfuscator = Objects.requireNonNull(orebfuscator);
 
-    if (WORLD_GET_MAX_HEIGHT != null && WORLD_GET_MIN_HEIGHT != null) {
-      this.maxHeight = (int) WORLD_GET_MAX_HEIGHT.invoke(world);
-      this.minHeight = (int) WORLD_GET_MIN_HEIGHT.invoke(world);
-    } else {
-      this.maxHeight = 256;
-      this.minHeight = 0;
-    }
+    this.maxHeight = world.getMaxHeight();
+    this.minHeight = world.getMinHeight();
   }
 
   @Override
   public WorldConfigBundle config() {
-    if (this.worldConfigBundle == null) {
-      this.worldConfigBundle = this.orebfuscator.config().world(this);
+    var bundle = this.worldConfigBundle;
+    if (bundle == null) {
+      bundle = this.orebfuscator.config().world(this);
+      this.worldConfigBundle = bundle;
     }
-    return this.worldConfigBundle;
+    return bundle;
   }
 
   @Override
@@ -128,13 +90,13 @@ public class BukkitWorldAccessor implements WorldAccessor {
     return blockToSectionCoord(y) - minSection();
   }
 
-  public ChunkAccessor[] getNeighboringChunksNow(int chunkX, int chunkZ) {
+  public ChunkAccessor[] getLoadedNeighboringChunks(int chunkX, int chunkZ) {
     final ChunkAccessor[] chunks = new ChunkAccessor[4];
 
     for (ChunkDirection direction : ChunkDirection.values()) {
       int x = chunkX + direction.getOffsetX();
       int z = chunkZ + direction.getOffsetZ();
-      chunks[direction.ordinal()] = getChunkNow(x, z);
+      chunks[direction.ordinal()] = ChunkAccessor.ofNullable(OrebfuscatorNms.getChunkIfLoaded(world, x, z));
     }
 
     return chunks;

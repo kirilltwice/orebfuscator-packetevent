@@ -1,7 +1,6 @@
 package net.imprex.orebfuscator;
 
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.events.PacketListener;
+import com.github.retrooper.packetevents.PacketEvents;
 import dev.imprex.orebfuscator.OrebfuscatorDumpFile;
 import dev.imprex.orebfuscator.PermissionRequirements;
 import java.nio.file.Path;
@@ -51,7 +50,7 @@ public class OrebfuscatorCommand implements CommandExecutor, TabCompleter {
       dumpFile.set("versions.server", Bukkit.getVersion());
       dumpFile.set("versions.bukkit", Bukkit.getBukkitVersion());
       dumpFile.set("versions.vendor", Bukkit.getName());
-      dumpFile.set("versions.protocolLib", ProtocolLibrary.getPlugin().toString());
+      dumpFile.set("versions.packetEvents", PacketEvents.getAPI().getVersion().toString());
 
       var plugins = dumpFile.createSection("plugins");
       for (Plugin bukkitPlugin : Bukkit.getPluginManager().getPlugins()) {
@@ -60,15 +59,6 @@ public class OrebfuscatorCommand implements CommandExecutor, TabCompleter {
         var plugin = plugins.createSection(bukkitPlugin.getName());
         plugin.set("version", description.getVersion());
         plugin.set("author", description.getAuthors().toString());
-      }
-
-      var listeners = dumpFile.createSection("listeners");
-      for (PacketListener packetListener : ProtocolLibrary.getProtocolManager().getPacketListeners()) {
-        var listener = listeners.createSection(
-            packetListener.getClass().getName() + "@" + System.identityHashCode(packetListener));
-        listener.set("plugin", packetListener.getPlugin().toString());
-        listener.set("receivingWhitelist", packetListener.getReceivingWhitelist().toString());
-        listener.set("sendingWhitelist", packetListener.getSendingWhitelist().toString());
       }
 
       Path path = dumpFile.write();

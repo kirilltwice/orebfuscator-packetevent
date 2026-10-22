@@ -30,6 +30,7 @@ public class OrebfuscatorProximityConfig extends AbstractWorldConfig implements 
 
   private boolean rayCastCheckEnabled = false;
   private boolean rayCastCheckOnlyCheckCenter = false;
+  private boolean entityHiderEnabled = true;
   private int defaultBlockFlags = (ProximityHeightCondition.MATCH_ALL | BlockFlags.FLAG_USE_BLOCK_BELOW);
 
   private boolean usesBlockSpecificConfigs = false;
@@ -58,6 +59,7 @@ public class OrebfuscatorProximityConfig extends AbstractWorldConfig implements 
 
     this.rayCastCheckEnabled = section.getBoolean("rayCastCheck.enabled", false);
     this.rayCastCheckOnlyCheckCenter = section.getBoolean("rayCastCheck.onlyCheckCenter", false);
+    this.entityHiderEnabled = section.getBoolean("entityHider.enabled", true);
 
     this.defaultBlockFlags = ProximityHeightCondition.create(this.minY, this.maxY);
     if (section.getBoolean("useBlockBelow", true)) {
@@ -87,6 +89,7 @@ public class OrebfuscatorProximityConfig extends AbstractWorldConfig implements 
 
     section.set("rayCastCheck.enabled", this.rayCastCheckEnabled);
     section.set("rayCastCheck.onlyCheckCenter", this.rayCastCheckOnlyCheckCenter);
+    section.set("entityHider.enabled", this.entityHiderEnabled);
     section.set("useBlockBelow", BlockFlags.isUseBlockBelowBitSet(this.defaultBlockFlags));
 
     this.serializeHiddenBlocks(section);
@@ -193,6 +196,11 @@ public class OrebfuscatorProximityConfig extends AbstractWorldConfig implements 
   @Override
   public boolean rayCastCheckOnlyCheckCenter() {
     return this.rayCastCheckOnlyCheckCenter;
+  }
+
+  @Override
+  public boolean entityHiderEnabled() {
+    return this.entityHiderEnabled;
   }
 
   @Override

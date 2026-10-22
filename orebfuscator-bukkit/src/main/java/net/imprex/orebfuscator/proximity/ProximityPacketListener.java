@@ -1,47 +1,50 @@
 package net.imprex.orebfuscator.proximity;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.reflect.StructureModifier;
-import com.comphenix.protocol.wrappers.ChunkCoordIntPair;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerAbstract;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import dev.imprex.orebfuscator.PermissionRequirements;
 import dev.imprex.orebfuscator.config.api.ProximityConfig;
-import dev.imprex.orebfuscator.player.OrebfuscatorPlayer;
+import io.netty.buffer.ByteBuf;
 import net.imprex.orebfuscator.Orebfuscator;
 import net.imprex.orebfuscator.iterop.BukkitPlayerAccessor;
 import net.imprex.orebfuscator.iterop.BukkitPlayerAccessorManager;
 import net.imprex.orebfuscator.iterop.BukkitWorldAccessor;
-import net.imprex.orebfuscator.util.MinecraftVersion;
+import net.imprex.orebfuscator.util.PacketBuffers;
+import org.bukkit.entity.Player;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class ProximityPacketListener extends PacketAdapter {
-
-  private static final boolean HAS_CHUNK_POS_FIELD = MinecraftVersion.isAtOrAbove("1.20.2");
+public class ProximityPacketListener extends PacketListenerAbstract {
 
   private final BukkitPlayerAccessorManager playerManager;
-  private final ProtocolManager protocolManager;
 
   public ProximityPacketListener(Orebfuscator orebfuscator) {
-    super(orebfuscator, PacketType.Play.Server.UNLOAD_CHUNK);
+    super(PacketListenerPriority.NORMAL);
 
     this.playerManager = orebfuscator.playerManager();
 
-    this.protocolManager = ProtocolLibrary.getProtocolManager();
-    this.protocolManager.addPacketListener(this);
+    PacketEvents.getAPI().getEventManager().registerListener(this);
   }
 
   public void unregister() {
-    this.protocolManager.removePacketListener(this);
+    PacketEvents.getAPI().getEventManager().unregisterListener(this);
   }
 
   @Override
-  public void onPacketSending(PacketEvent event) {
-    BukkitPlayerAccessor player = this.playerManager.tryGet(event.getPlayer());
+  public void onPacketSend(PacketSendEvent event) {
+    if (event.getPacketType() != PacketType.Play.Server.UNLOAD_CHUNK) {
+      return;
+    }
+
+    Player bukkitPlayer = event.getPlayer();
+    if (bukkitPlayer == null) {
+      return;
+    }
+
+    BukkitPlayerAccessor player = this.playerManager.tryGet(bukkitPlayer);
     if (player == null || player.hasPermission(PermissionRequirements.BYPASS)) {
       return;
     }
@@ -52,15 +55,8 @@ public class ProximityPacketListener extends PacketAdapter {
       return;
     }
 
-    PacketContainer packet = event.getPacket();
-    OrebfuscatorPlayer orebfuscatorPlayer = player.orebfuscatorPlayer();
-
-    if (HAS_CHUNK_POS_FIELD) {
-      ChunkCoordIntPair chunkPos = packet.getChunkCoordIntPairs().read(0);
-      orebfuscatorPlayer.removeChunk(world, chunkPos.getChunkX(), chunkPos.getChunkZ());
-    } else {
-      StructureModifier<Integer> ints = packet.getIntegers();
-      orebfuscatorPlayer.removeChunk(world, ints.read(0), ints.read(1));
-    }
+    ByteBuf buffer = PacketBuffers.buffer(event);
+    long chunkPos = buffer.getLong(buffer.readerIndex());
+    player.orebfuscatorPlayer().removeChunk(world, (int) chunkPos, (int) (chunkPos >>> 32));
   }
 }

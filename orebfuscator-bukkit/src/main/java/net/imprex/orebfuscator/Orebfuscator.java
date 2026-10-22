@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.List;
 import net.imprex.orebfuscator.api.OrebfuscatorService;
 import net.imprex.orebfuscator.compatibility.PluginCompatibility;
+import net.imprex.orebfuscator.entity.EntityHiderSystem;
 import net.imprex.orebfuscator.iterop.BukkitLoggerAccessor;
 import net.imprex.orebfuscator.iterop.BukkitPlayerAccessorManager;
 import net.imprex.orebfuscator.iterop.BukkitWorldAccessorManager;
@@ -61,6 +62,7 @@ public class Orebfuscator extends JavaPlugin implements Listener, OrebfuscatorCo
 
   private ProximitySystem proximitySystem;
   private ProximityPacketListener proximityPacketListener;
+  private EntityHiderSystem entityHiderSystem;
 
   private Version orebfuscatorVersion;
   private UpdateSystem updateSystem;
@@ -74,13 +76,13 @@ public class Orebfuscator extends JavaPlugin implements Listener, OrebfuscatorCo
   @Override
   public void onEnable() {
     try {
-      if (MinecraftVersion.isBelow("1.16")) {
-        throw new RuntimeException("Orebfuscator only supports minecraft 1.16 and above");
+      if (MinecraftVersion.isBelow("1.21.11")) {
+        throw new RuntimeException("Orebfuscator only supports minecraft 1.21.11 and above");
       }
 
-      Plugin protocolLib = getServer().getPluginManager().getPlugin("ProtocolLib");
-      if (protocolLib == null || !protocolLib.isEnabled()) {
-        throw new RuntimeException("ProtocolLib can't be found or is disabled! Orebfuscator can't be enabled.");
+      Plugin packetEvents = getServer().getPluginManager().getPlugin("packetevents");
+      if (packetEvents == null || !packetEvents.isEnabled()) {
+        throw new RuntimeException("PacketEvents can't be found or is disabled! Orebfuscator can't be enabled.");
       }
 
       this.statisticsRegistry = new StatisticsRegistry();
@@ -91,7 +93,6 @@ public class Orebfuscator extends JavaPlugin implements Listener, OrebfuscatorCo
       OrebfuscatorCompatibility.initialize(this, config);
 
       this.playerManager = new BukkitPlayerAccessorManager(this);
-      new MetricsSystem(this);
       this.updateSystem = new UpdateSystem(this, "bukkit");
 
       this.statistics = new OrebfuscatorStatistics(this.config, this.statisticsRegistry);
@@ -110,6 +111,7 @@ public class Orebfuscator extends JavaPlugin implements Listener, OrebfuscatorCo
       if (this.config.proximityEnabled()) {
         this.proximitySystem.start();
         this.proximityPacketListener = new ProximityPacketListener(this);
+        this.entityHiderSystem = new EntityHiderSystem(this);
       }
 
       // Load packet listener
@@ -136,20 +138,24 @@ public class Orebfuscator extends JavaPlugin implements Listener, OrebfuscatorCo
   public void onDisable() {
     this.pluginCompatibility.stop();
 
-    if (this.executor != null) {
-      this.executor.shutdown();
+    if (this.entityHiderSystem != null) {
+      this.entityHiderSystem.shutdown();
     }
 
-    if (this.obfuscationCache != null) {
-      this.obfuscationCache.close();
+    if (this.proximityPacketListener != null) {
+      this.proximityPacketListener.unregister();
     }
 
     if (this.obfuscationSystem != null) {
       this.obfuscationSystem.shutdown();
     }
 
-    if (this.config != null && this.config.proximityEnabled() && this.proximityPacketListener != null) {
-      this.proximityPacketListener.unregister();
+    if (this.executor != null) {
+      this.executor.shutdown();
+    }
+
+    if (this.obfuscationCache != null) {
+      this.obfuscationCache.close();
     }
 
     OrebfuscatorCompatibility.close();

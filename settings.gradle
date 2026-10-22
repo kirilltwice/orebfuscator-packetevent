@@ -6,10 +6,6 @@ pluginManagement {
             name = "papermc"
             url = "https://repo.papermc.io/repository/maven-public/"
         }
-        maven {
-            name = 'Fabric'
-            url = 'https://maven.fabricmc.net/'
-        }
     }
 }
 
@@ -28,23 +24,5 @@ include "orebfuscator-bukkit:orebfuscator-bukkit-compatibility:orebfuscator-bukk
 include "orebfuscator-bukkit:orebfuscator-bukkit-compatibility:orebfuscator-bukkit-compatibility-paper"
 include "orebfuscator-bukkit:orebfuscator-bukkit-compatibility:orebfuscator-bukkit-compatibility-folia"
 include "orebfuscator-bukkit:orebfuscator-bukkit-nms"
-include "orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_16_R3"
-include "orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_17_R1"
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_18_R1'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_18_R2'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_19_R1'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_19_R2'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_19_R3'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_20_R1'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_20_R2'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_20_R3'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_20_R4'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_21_R1'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_21_R2'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_21_R3'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_21_R4'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_21_R5'
-include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_21_R6'
 include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v1_21_R7'
 include 'orebfuscator-bukkit:orebfuscator-bukkit-nms:orebfuscator-bukkit-nms-v26_1'
-include "orebfuscator-fabric"

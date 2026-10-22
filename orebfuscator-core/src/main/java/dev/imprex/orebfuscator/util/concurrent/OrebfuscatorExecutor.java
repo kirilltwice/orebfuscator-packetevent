@@ -93,10 +93,10 @@ public class OrebfuscatorExecutor implements Executor {
       StackTraceElement[] stackTrace = entry.getValue();
 
       ConfigurationSection threadSection =
-          threads.createSection("thread-" + thread.getId());
+          threads.createSection("thread-" + thread.threadId());
 
       threadSection.set("name", thread.getName());
-      threadSection.set("id", thread.getId());
+      threadSection.set("id", thread.threadId());
       threadSection.set("state", thread.getState().name());
       threadSection.set("alive", thread.isAlive());
       threadSection.set("daemon", thread.isDaemon());

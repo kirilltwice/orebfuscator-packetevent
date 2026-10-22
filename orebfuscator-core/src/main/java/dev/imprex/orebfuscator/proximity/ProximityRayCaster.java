@@ -47,11 +47,31 @@ public class ProximityRayCaster {
         || canRayPass(origin, target, 1.0, 1.0, 1.0);
   }
 
-  private boolean canRayPass(EntityPose origin, BlockPos target, double offsetX, double offsetY, double offsetZ) {
-    double tx = target.x() + offsetX;
-    double ty = target.y() + offsetY;
-    double tz = target.z() + offsetZ;
+  public boolean isVisible(EntityPose origin, double minX, double minY, double minZ, double maxX, double maxY,
+      double maxZ) {
+    return canRayPass(origin, (minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5)
+        || canRayPass(origin, minX, minY, minZ)
+        || canRayPass(origin, maxX, minY, minZ)
+        || canRayPass(origin, minX, maxY, minZ)
+        || canRayPass(origin, maxX, maxY, minZ)
+        || canRayPass(origin, minX, minY, maxZ)
+        || canRayPass(origin, maxX, minY, maxZ)
+        || canRayPass(origin, minX, maxY, maxZ)
+        || canRayPass(origin, maxX, maxY, maxZ);
+  }
 
+  private boolean canRayPass(EntityPose origin, double tx, double ty, double tz) {
+    return canRayPass(origin, tx, ty, tz,
+        (int) QuickMaths.floor(tx), (int) QuickMaths.floor(ty), (int) QuickMaths.floor(tz));
+  }
+
+  private boolean canRayPass(EntityPose origin, BlockPos target, double offsetX, double offsetY, double offsetZ) {
+    return canRayPass(origin, target.x() + offsetX, target.y() + offsetY, target.z() + offsetZ,
+        target.x(), target.y(), target.z());
+  }
+
+  private boolean canRayPass(EntityPose origin, double tx, double ty, double tz, int targetX, int targetY,
+      int targetZ) {
     double dx = origin.x() - tx;
     double dy = origin.y() - ty;
     double dz = origin.z() - tz;
@@ -86,7 +106,7 @@ public class ProximityRayCaster {
       z = (int) QuickMaths.floor(cz);
 
       // check if we reached our target block
-      if (x == target.x() && y == target.y() && z == target.z()) {
+      if (x == targetX && y == targetY && z == targetZ) {
         return true;
       }
 

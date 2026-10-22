@@ -1,5 +1,6 @@
 package net.imprex.orebfuscator.compatibility.folia;
 
+import java.util.function.BooleanSupplier;
 import net.imprex.orebfuscator.compatibility.CompatibilityScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -17,6 +18,17 @@ public class FoliaScheduler implements CompatibilityScheduler {
   public void runForPlayer(Player player, Runnable runnable) {
     if (this.plugin.isEnabled()) {
       player.getScheduler().run(this.plugin, task -> runnable.run(), null);
+    }
+  }
+
+  @Override
+  public void runForPlayerTimer(Player player, long periodTicks, BooleanSupplier task) {
+    if (this.plugin.isEnabled()) {
+      player.getScheduler().runAtFixedRate(this.plugin, scheduledTask -> {
+        if (!task.getAsBoolean()) {
+          scheduledTask.cancel();
+        }
+      }, null, 1L, periodTicks);
     }
   }
 

@@ -1,62 +1,54 @@
 package net.imprex.orebfuscator.iterop;
 
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.reflect.StructureModifier;
-import com.comphenix.protocol.wrappers.nbt.NbtBase;
-import com.comphenix.protocol.wrappers.nbt.NbtCompound;
 import dev.imprex.orebfuscator.interop.ChunkPacketAccessor;
 import dev.imprex.orebfuscator.obfuscation.ObfuscationResponse;
 import dev.imprex.orebfuscator.util.BlockPos;
-import java.util.BitSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.Predicate;
-import net.imprex.orebfuscator.util.MinecraftVersion;
-import net.imprex.orebfuscator.util.WrappedClientboundLevelChunkPacketData;
+import io.netty.buffer.ByteBuf;
+import java.util.Set;
+import net.imprex.orebfuscator.util.PacketBuffers;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public class BukkitChunkPacketAccessor implements ChunkPacketAccessor {
-
-  private static final boolean HAS_CLIENTBOUND_LEVEL_CHUNK_PACKET_DATA = MinecraftVersion.isAtOrAbove("1.18");
-  private static final boolean HAS_HEIGHT_BITMASK = MinecraftVersion.isBelow("1.18");
-  private static final boolean HAS_VARINT_BITMASK = MinecraftVersion.isBelow("1.17");
+public final class BukkitChunkPacketAccessor implements ChunkPacketAccessor {
 
   private final int chunkX;
   private final int chunkZ;
-
-  private final BitSet sectionMask;
   private final byte[] data;
 
-  private final PacketContainer packet;
-  private final @Nullable WrappedClientboundLevelChunkPacketData packetData;
+  private final int dataLengthIndex;
+  private final int blockEntitiesIndex;
 
-  public BukkitChunkPacketAccessor(PacketContainer packet, BukkitWorldAccessor worldAccessor) {
+  private @Nullable ByteBuf packet;
+
+  public BukkitChunkPacketAccessor(ByteBuf packet) {
+    int index = PacketBuffers.skipVarInt(packet, packet.readerIndex());
+
+    this.chunkX = packet.getInt(index);
+    this.chunkZ = packet.getInt(index + 4);
+    index += 8;
+
+    int heightmapCount = PacketBuffers.getVarInt(packet, index);
+    index = PacketBuffers.skipVarInt(packet, index);
+    for (int i = 0; i < heightmapCount; i++) {
+      index = PacketBuffers.skipVarInt(packet, index);
+      int longCount = PacketBuffers.getVarInt(packet, index);
+      index = PacketBuffers.skipVarInt(packet, index) + longCount * Long.BYTES;
+    }
+
+    this.dataLengthIndex = index;
+    int dataLength = PacketBuffers.getVarInt(packet, index);
+    index = PacketBuffers.skipVarInt(packet, index);
+
+    if (dataLength < 0 || index + dataLength > packet.writerIndex()) {
+      throw new IllegalArgumentException("Invalid chunk data length: " + dataLength);
+    }
+
+    this.data = new byte[dataLength];
+    packet.getBytes(index, this.data);
+    this.blockEntitiesIndex = index + dataLength;
+
     this.packet = packet;
-
-    StructureModifier<Integer> packetInteger = packet.getIntegers();
-    this.chunkX = packetInteger.read(0);
-    this.chunkZ = packetInteger.read(1);
-
-    if (HAS_CLIENTBOUND_LEVEL_CHUNK_PACKET_DATA) {
-      this.packetData = new WrappedClientboundLevelChunkPacketData(packet);
-      this.data = this.packetData.getBuffer();
-    } else {
-      this.packetData = null;
-      this.data = packet.getByteArrays().read(0);
-    }
-
-    if (HAS_HEIGHT_BITMASK) {
-      if (HAS_VARINT_BITMASK) {
-        this.sectionMask = convertIntToBitSet(packetInteger.read(2));
-      } else {
-        this.sectionMask = packet.getSpecificModifier(BitSet.class).read(0);
-      }
-    } else {
-      this.sectionMask = new BitSet();
-      this.sectionMask.set(0, worldAccessor.sectionCount());
-    }
   }
 
   @Override
@@ -71,7 +63,7 @@ public class BukkitChunkPacketAccessor implements ChunkPacketAccessor {
 
   @Override
   public boolean isSectionPresent(int index) {
-    return this.sectionMask.get(index);
+    return true;
   }
 
   @Override
@@ -80,54 +72,85 @@ public class BukkitChunkPacketAccessor implements ChunkPacketAccessor {
   }
 
   @Override
-  public void update(ObfuscationResponse response) {
-    Predicate<BlockPos> blockEntityPredicate = relativePostion ->
-        response.blockEntities().contains(relativePostion.add(chunkX << 4, 0, chunkZ << 4));
+  public synchronized void update(ObfuscationResponse response) {
+    ByteBuf source = this.packet;
+    if (source == null) {
+      return;
+    }
 
-    if (this.packetData != null) {
-      this.packetData.setBuffer(response.data());
-      this.packetData.removeBlockEntityIf(blockEntityPredicate);
-    } else {
-      this.packet.getByteArrays().write(0, response.data());
-      removeTileEntitiesFromPacket(blockEntityPredicate);
+    this.packet = rewrite(source, response.data(), response.blockEntities());
+    source.release();
+  }
+
+  public synchronized @Nullable ByteBuf take() {
+    ByteBuf buffer = this.packet;
+    this.packet = null;
+    return buffer;
+  }
+
+  public synchronized void release() {
+    ByteBuf buffer = this.packet;
+    this.packet = null;
+    if (buffer != null) {
+      buffer.release();
     }
   }
 
-  private void removeTileEntitiesFromPacket(Predicate<BlockPos> predicate) {
-    StructureModifier<List<NbtBase<?>>> packetNbtList = this.packet.getListNbtModifier();
+  private ByteBuf rewrite(ByteBuf source, byte[] data, Set<BlockPos> removedBlockEntities) {
+    int start = source.readerIndex();
+    int end = source.writerIndex();
 
-    List<NbtBase<?>> tileEntities = packetNbtList.read(0);
-    this.removeTileEntities(tileEntities, predicate);
-    packetNbtList.write(0, tileEntities);
+    ByteBuf target = source.alloc().buffer(
+        this.dataLengthIndex - start + 5 + data.length + end - this.blockEntitiesIndex);
+    try {
+      target.writeBytes(source, start, this.dataLengthIndex - start);
+      PacketBuffers.writeVarInt(target, data.length);
+      target.writeBytes(data);
+
+      if (removedBlockEntities.isEmpty()) {
+        target.writeBytes(source, this.blockEntitiesIndex, end - this.blockEntitiesIndex);
+      } else {
+        writeBlockEntities(source, target, removedBlockEntities);
+      }
+      return target;
+    } catch (RuntimeException e) {
+      target.release();
+      throw e;
+    }
   }
 
-  private void removeTileEntities(List<NbtBase<?>> tileEntities, Predicate<BlockPos> predicate) {
-    for (Iterator<NbtBase<?>> iterator = tileEntities.iterator(); iterator.hasNext(); ) {
-      NbtCompound tileEntity = (NbtCompound) iterator.next();
+  private void writeBlockEntities(ByteBuf source, ByteBuf target, Set<BlockPos> removedBlockEntities) {
+    int count = PacketBuffers.getVarInt(source, this.blockEntitiesIndex);
+    int index = PacketBuffers.skipVarInt(source, this.blockEntitiesIndex);
 
-      int x = tileEntity.getInteger("x");
-      int y = tileEntity.getInteger("y");
-      int z = tileEntity.getInteger("z");
+    int[] keptRanges = new int[count * 2];
+    int keptCount = 0;
 
-      BlockPos position = new BlockPos(x, y, z);
-      if (predicate.test(position)) {
-        iterator.remove();
+    int baseX = this.chunkX << 4;
+    int baseZ = this.chunkZ << 4;
+
+    for (int i = 0; i < count; i++) {
+      int entryStart = index;
+
+      int packedXZ = source.getUnsignedByte(index);
+      int y = source.getShort(index + 1);
+      index = PacketBuffers.skipVarInt(source, index + 3);
+      index = PacketBuffers.skipNbt(source, index);
+
+      var position = new BlockPos(baseX + (packedXZ >> 4), y, baseZ + (packedXZ & 15));
+      if (!removedBlockEntities.contains(position)) {
+        keptRanges[keptCount * 2] = entryStart;
+        keptRanges[keptCount * 2 + 1] = index;
+        keptCount++;
       }
     }
-  }
 
-  public boolean isEmpty() {
-    return this.sectionMask.isEmpty();
-  }
-
-  private static BitSet convertIntToBitSet(int value) {
-    BitSet bitSet = new BitSet();
-    for (int index = 0; value != 0; index++) {
-      if ((value & 1) == 1) {
-        bitSet.set(index);
-      }
-      value >>>= 1;
+    PacketBuffers.writeVarInt(target, keptCount);
+    for (int i = 0; i < keptCount; i++) {
+      int rangeStart = keptRanges[i * 2];
+      target.writeBytes(source, rangeStart, keptRanges[i * 2 + 1] - rangeStart);
     }
-    return bitSet;
+
+    target.writeBytes(source, index, source.writerIndex() - index);
   }
 }

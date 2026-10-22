@@ -9,6 +9,7 @@ import dev.imprex.orebfuscator.util.NamespacedKey;
 import dev.imprex.orebfuscator.util.QuickMaths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jspecify.annotations.NullMarked;
@@ -16,6 +17,9 @@ import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public abstract class AbstractNmsManager implements NmsManager {
+
+  private static final NamespacedKey BLOCK_ENTITIES_TAG = NamespacedKey.parse("orebfuscator:block_entities");
+  private static final NamespacedKey MOVING_PISTON = NamespacedKey.parse("minecraft:moving_piston");
 
   private static @Nullable MethodAccessor worldGetHandle;
   private static @Nullable MethodAccessor playerGetHandle;
@@ -88,7 +92,18 @@ public abstract class AbstractNmsManager implements NmsManager {
 
   @Override
   public final @Nullable BlockTag getBlockTagByName(String name) {
-    return NamespacedKey.tryParse(name).map(this.tags::get).orElse(null);
+    return NamespacedKey.tryParse(name)
+        .map(key -> key.equals(BLOCK_ENTITIES_TAG)
+            ? this.tags.computeIfAbsent(key, this::createBlockEntitiesTag)
+            : this.tags.get(key))
+        .orElse(null);
+  }
+
+  private BlockTag createBlockEntitiesTag(NamespacedKey key) {
+    return new BlockTag(key, this.blocks.values().stream()
+        .filter(block -> !block.getKey().equals(MOVING_PISTON))
+        .filter(block -> block.getBlockStates().stream().anyMatch(BlockStateProperties::isBlockEntity))
+        .collect(Collectors.toUnmodifiableSet()));
   }
 
   @Override

@@ -5,6 +5,7 @@ import dev.imprex.orebfuscator.interop.ChunkAccessor;
 import dev.imprex.orebfuscator.logging.OfcLogger;
 import java.lang.reflect.Constructor;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BooleanSupplier;
 
 import net.imprex.orebfuscator.compatibility.CompatibilityLayer;
 import net.imprex.orebfuscator.util.ServerVersion;
@@ -48,6 +49,10 @@ public class OrebfuscatorCompatibility {
 
   public static void runForPlayer(Player player, Runnable runnable) {
     instance.getScheduler().runForPlayer(player, runnable);
+  }
+
+  public static void runForPlayerTimer(Player player, long periodTicks, BooleanSupplier task) {
+    instance.getScheduler().runForPlayerTimer(player, periodTicks, task);
   }
 
   public static void runAsyncNow(Runnable runnable) {

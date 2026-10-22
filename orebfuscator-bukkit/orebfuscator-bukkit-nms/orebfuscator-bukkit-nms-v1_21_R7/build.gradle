@@ -1,5 +1,5 @@
 ext {
-    javaVersion = 21
+    javaVersion = 25
     nmsVersion = "1.21.11-R0.2-SNAPSHOT"
 }
 

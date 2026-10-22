@@ -19,6 +19,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import dev.imprex.orebfuscator.reflect.Reflector;
+import dev.imprex.orebfuscator.reflect.accessor.MethodAccessor;
 import net.imprex.orebfuscator.nms.AbstractNmsManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -28,9 +30,11 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -62,6 +66,12 @@ public class NmsManager extends AbstractNmsManager {
 
     return BLOCK_ID_AIR;
   }
+
+  private static final @Nullable MethodAccessor GET_TRACKED_ENTITY = Reflector.of(Entity.class).method()
+      .banStatic()
+      .nameIs("moonrise$getTrackedEntity")
+      .parameterCount(0)
+      .first();
 
   private static ServerLevel level(World world) {
     return worldHandle(world, ServerLevel.class);
@@ -135,6 +145,37 @@ public class NmsManager extends AbstractNmsManager {
     }
 
     return chunk != null ? new DefaultChunkAccessor(chunk) : null;
+  }
+
+  @Override
+  public @Nullable ChunkAccessor getChunkIfLoaded(World world, int chunkX, int chunkZ) {
+    LevelChunk chunk = level(world).getChunkSource().getChunkNow(chunkX, chunkZ);
+    return chunk != null ? new DefaultChunkAccessor(chunk) : null;
+  }
+
+  @Override
+  public org.bukkit.entity.@Nullable Entity getEntity(World world, int entityId) {
+    Entity entity = level(world).getEntity(entityId);
+    return entity != null ? entity.getBukkitEntity() : null;
+  }
+
+  @Override
+  public void resendEntity(Player player, int entityId) {
+    ServerPlayer serverPlayer = player(player);
+    ServerLevel level = serverPlayer.level();
+
+    Entity entity = level.getEntity(entityId);
+    if (entity == null) {
+      return;
+    }
+
+    ChunkMap.TrackedEntity trackedEntity = GET_TRACKED_ENTITY != null
+        ? (ChunkMap.TrackedEntity) GET_TRACKED_ENTITY.invoke(entity)
+        : level.getChunkSource().chunkMap.entityMap.get(entityId);
+
+    if (trackedEntity != null && trackedEntity.seenBy.contains(serverPlayer.connection)) {
+      trackedEntity.serverEntity.addPairing(serverPlayer);
+    }
   }
 
   @Override

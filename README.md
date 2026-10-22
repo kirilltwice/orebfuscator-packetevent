@@ -11,18 +11,19 @@ Orebfuscator empowers server owners to protect their server from X-Ray Clients a
 ### Features
 * Seamless Integration: Plug & Play functionality for effortless use.
 * Extensive Configuration: Highly customizable settings to tailor the experience to your liking.
-* Server Compatibility: Designed for Spigot-based servers 1.16 and newer.
+* Server Compatibility: Designed for Spigot-based servers 1.21.11 and newer.
 * Block Obfuscation: Conceal non-visible blocks from players' view.
-* Block-Entity Support: Hide block entities such as Chests and Furnaces.
+* Block-Entity Support: Hide every block entity (`tag(orebfuscator:block_entities)`) behind blocks.
+* Entity Hiding: Hide entities and players that are behind blocks (`entityHider` in proximity configs).
 * Dynamic Block Visibility: Adjust block visibility based on player proximity and distance.
 
 ### Requirements
-* Java 17 or higher
-* Spigot, Paper, Folia or compatible forks (1.16.5 or newer)
-* [ProtocolLib](https://www.spigotmc.org/resources/protocollib.1997) 5.4.0 or later
+* Java 25 or higher
+* Spigot, Paper, Folia or compatible forks (1.21.11 or newer)
+* [PacketEvents](https://modrinth.com/plugin/packetevents) 2.14.0 or later
 
 ### Installation
-1. Download [ProtocolLib](https://github.com/dmulloy2/ProtocolLib/releases)
+1. Download [PacketEvents](https://github.com/retrooper/packetevents/releases)
 2. Download [Orebfuscator](https://github.com/Imprex-Development/Orebfuscator/releases)
 3. Place both plugins in your _plugins_ directory
 4. Start your server and [configure Orebfuscator](https://github.com/Imprex-Development/Orebfuscator/wiki/Config) to your liking
@@ -54,16 +55,7 @@ Testing policy differs depending on the Minecraft release cycle.
 
 **Until Minecraft 27.x**
 
-Each Orebfuscator release is tested against all supported Minecraft versions on PaperMC and Spigot with the following exceptions:
-
-- 1.17.x
-- 1.18.x
-- 1.19.x
-
-The following versions are still included in testing:
-
-- 1.16.5
-- 1.20.x and newer supported releases
+Each Orebfuscator release is tested against all supported Minecraft versions (1.21.11 and newer) on PaperMC and Spigot.
 
 **After Minecraft 27.x**
 

@@ -1,22 +1,17 @@
 package net.imprex.orebfuscator.iterop;
 
-import com.comphenix.protocol.AsynchronousManager;
-import com.comphenix.protocol.events.PacketEvent;
 import dev.imprex.orebfuscator.PermissionRequirements;
 import dev.imprex.orebfuscator.interop.PlayerAccessor;
-import dev.imprex.orebfuscator.logging.OfcLogger;
 import dev.imprex.orebfuscator.player.OrebfuscatorPlayer;
 import dev.imprex.orebfuscator.util.BlockPos;
 import dev.imprex.orebfuscator.util.EntityPose;
-import java.util.Map;
+import io.netty.channel.Channel;
 import java.util.Objects;
-import java.util.WeakHashMap;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 import net.imprex.orebfuscator.Orebfuscator;
 import net.imprex.orebfuscator.OrebfuscatorCompatibility;
 import net.imprex.orebfuscator.OrebfuscatorNms;
-import net.imprex.orebfuscator.obfuscation.PendingChunkBatch;
+import net.imprex.orebfuscator.entity.EntityHider;
+import net.imprex.orebfuscator.obfuscation.PacketQueue;
 import net.imprex.orebfuscator.util.PermissionUtil;
 import org.bukkit.GameMode;
 import org.bukkit.World;
@@ -35,8 +30,8 @@ public class BukkitPlayerAccessor implements PlayerAccessor {
   private final BukkitWorldAccessorManager worldManager;
   private final OrebfuscatorPlayer orebfuscatorPlayer;
 
-  private final Map<Object, CompletableFuture<Void>> pendingPackets = new WeakHashMap<>();
-  private final AtomicReference<@Nullable PendingChunkBatch> chunkBatch = new AtomicReference<>();
+  private final EntityHider entityHider;
+  private volatile @Nullable PacketQueue packetQueue;
   private volatile boolean respawning = false;
 
   public BukkitPlayerAccessor(Orebfuscator orebfuscator, Player player) {
@@ -45,6 +40,28 @@ public class BukkitPlayerAccessor implements PlayerAccessor {
     this.worldManager = orebfuscator.worldManager();
     this.world = this.worldManager.get(player.getWorld());
     this.orebfuscatorPlayer = new OrebfuscatorPlayer(orebfuscator, this);
+    this.entityHider = new EntityHider(orebfuscator, this);
+  }
+
+  public Player player() {
+    return this.player;
+  }
+
+  public EntityHider entityHider() {
+    return this.entityHider;
+  }
+
+  public PacketQueue packetQueue(Channel channel) {
+    PacketQueue queue = this.packetQueue;
+    if (queue == null || queue.channel() != channel) {
+      queue = new PacketQueue(channel, this.orebfuscator.statistics().injector);
+      this.packetQueue = queue;
+    }
+    return queue;
+  }
+
+  public @Nullable PacketQueue packetQueue() {
+    return this.packetQueue;
   }
 
   public void startRespawn() {
@@ -62,40 +79,6 @@ public class BukkitPlayerAccessor implements PlayerAccessor {
   public void changeWorld(BukkitWorldAccessor world) {
     this.world = world;
     this.orebfuscatorPlayer.clearChunks();
-  }
-
-  public @Nullable CompletableFuture<Void> obfuscationFuture(PacketEvent event) {
-    return pendingPackets.remove(event.getPacket().getHandle());
-  }
-
-  public void obfuscationFuture(PacketEvent event, CompletableFuture<Void> future) {
-    pendingPackets.putIfAbsent(event.getPacket().getHandle(), future);
-  }
-
-  public void startBatch(AsynchronousManager asynchronousManager, PacketEvent event) {
-    var nextBatch = new PendingChunkBatch(this.orebfuscator.statistics().injector, asynchronousManager, event);
-    var prevBatch = this.chunkBatch.getAndSet(nextBatch);
-
-    if (prevBatch != null) {
-      prevBatch.finish();
-      OfcLogger.warn("Pending chunk batch discarded because a new batch was initiated.");
-    }
-  }
-
-  public boolean addBatchChunk(CompletableFuture<Void> future) {
-    var batch = this.chunkBatch.get();
-    if (batch != null) {
-      batch.addChunk(future);
-      return true;
-    }
-    return false;
-  }
-
-  public void finishBatch() {
-    var batch = this.chunkBatch.getAndSet(null);
-    if (batch != null) {
-      batch.finish();
-    }
   }
 
   @Override

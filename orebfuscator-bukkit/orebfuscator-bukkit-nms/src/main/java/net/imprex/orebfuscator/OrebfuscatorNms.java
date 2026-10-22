@@ -12,6 +12,7 @@ import net.imprex.orebfuscator.nms.NmsManager;
 import net.imprex.orebfuscator.util.MinecraftVersion;
 import net.imprex.orebfuscator.util.ServerVersion;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
@@ -60,6 +61,18 @@ public class OrebfuscatorNms {
 
   public static @Nullable ChunkAccessor getChunkNow(World world, int chunkX, int chunkZ) {
     return instance.getChunkNow(world, chunkX, chunkZ);
+  }
+
+  public static @Nullable ChunkAccessor getChunkIfLoaded(World world, int chunkX, int chunkZ) {
+    return instance.getChunkIfLoaded(world, chunkX, chunkZ);
+  }
+
+  public static @Nullable Entity getEntity(World world, int entityId) {
+    return instance.getEntity(world, entityId);
+  }
+
+  public static void resendEntity(Player player, int entityId) {
+    instance.resendEntity(player, entityId);
   }
 
   public static void sendBlockUpdates(World world, Iterable<BlockPos> iterable) {

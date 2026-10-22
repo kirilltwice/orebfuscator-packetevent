@@ -1,11 +1,14 @@
 package net.imprex.orebfuscator.obfuscation;
 
+import com.github.retrooper.packetevents.PacketEvents;
 import dev.imprex.orebfuscator.obfuscation.DeobfuscationWorker;
 import dev.imprex.orebfuscator.util.BlockPos;
 import java.util.Collection;
 import java.util.List;
 import net.imprex.orebfuscator.Orebfuscator;
+import net.imprex.orebfuscator.iterop.BukkitPlayerAccessor;
 import net.imprex.orebfuscator.iterop.BukkitWorldAccessorManager;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.jspecify.annotations.NullMarked;
@@ -18,8 +21,7 @@ public class ObfuscationSystem {
   private final BukkitWorldAccessorManager worldManager;
   private final DeobfuscationWorker deobfuscationWorker;
 
-  private @Nullable ObfuscationSyncListener syncListener;
-  private @Nullable ObfuscationAsyncListener asyncListener;
+  private @Nullable ObfuscationPacketListener packetListener;
 
   public ObfuscationSystem(Orebfuscator orebfuscator) {
     this.orebfuscator = orebfuscator;
@@ -30,8 +32,8 @@ public class ObfuscationSystem {
   }
 
   public void registerChunkListener() {
-    this.syncListener = new ObfuscationSyncListener(orebfuscator);
-    this.asyncListener = new ObfuscationAsyncListener(orebfuscator);
+    this.packetListener = new ObfuscationPacketListener(orebfuscator);
+    PacketEvents.getAPI().getEventManager().registerListener(this.packetListener);
   }
 
   public void deobfuscate(Block block) {
@@ -58,11 +60,19 @@ public class ObfuscationSystem {
   }
 
   public void shutdown() {
-    if (this.syncListener != null) {
-      this.syncListener.unregister();
+    if (this.packetListener == null) {
+      return;
     }
-    if (this.asyncListener != null) {
-      this.asyncListener.unregister();
+
+    PacketEvents.getAPI().getEventManager().unregisterListener(this.packetListener);
+    this.packetListener = null;
+
+    for (var player : Bukkit.getOnlinePlayers()) {
+      BukkitPlayerAccessor accessor = this.orebfuscator.playerManager().tryGet(player);
+      var queue = accessor != null ? accessor.packetQueue() : null;
+      if (queue != null) {
+        queue.drain();
+      }
     }
   }
 }

@@ -1,4 +1,4 @@
-version: 6
+version: 7
 general:
   checkForUpdates: true
   updateOnBlockDamage: true
@@ -187,10 +187,13 @@ proximity:
       minDistance: 3
       fov: 80
     rayCastCheck:
-      enabled: false
+      enabled: true
       onlyCheckCenter: false
+    entityHider:
+      enabled: true
     useBlockBelow: true
     hiddenBlocks:
+      tag(orebfuscator:block_entities): {}
       tag(minecraft:diamond_ores): {}
       tag(minecraft:emerald_ores): {}
       minecraft:mossy_cobblestone: {}
@@ -247,10 +250,13 @@ proximity:
       minDistance: 3
       fov: 80
     rayCastCheck:
-      enabled: false
+      enabled: true
       onlyCheckCenter: false
+    entityHider:
+      enabled: true
     useBlockBelow: true
     hiddenBlocks:
+      tag(orebfuscator:block_entities): {}
       minecraft:ancient_debris: {}
       minecraft:lodestone: {}
       minecraft:nether_gold_ore: {}
@@ -303,10 +309,13 @@ proximity:
       minDistance: 3
       fov: 80
     rayCastCheck:
-      enabled: false
+      enabled: true
       onlyCheckCenter: false
+    entityHider:
+      enabled: true
     useBlockBelow: true
     hiddenBlocks:
+      tag(orebfuscator:block_entities): {}
       tag(minecraft:anvil): {}
       tag(minecraft:beehives): {}
       tag(minecraft:beds): {}

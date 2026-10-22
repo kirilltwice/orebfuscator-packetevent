@@ -1,4 +1,4 @@
-api-version: 1.16
+api-version: '1.21.11'
 folia-supported: true
 
 # keep capitalization of name for backwards comp.
@@ -10,7 +10,7 @@ author: Ingrim4
 authors: [NgLoader, lishid, SydMontague, ProgrammerDan, Aleksey-Terzi]
 
 main: net.imprex.orebfuscator.Orebfuscator
-depend: [ProtocolLib]
+depend: [packetevents]
 softdepend: [WorldEdit]
 
 commands:

@@ -17,13 +17,6 @@ public final class MinecraftVersion {
     static {
       MAPPINGS.add(new NmsMapping("26.1.0", "v26_1"));
       MAPPINGS.add(new NmsMapping("1.21.11", "v1_21_R7"));
-      MAPPINGS.add(new NmsMapping("1.21.9", "v1_21_R6"));
-      MAPPINGS.add(new NmsMapping("1.21.6", "v1_21_R5"));
-      MAPPINGS.add(new NmsMapping("1.21.5", "v1_21_R4"));
-      MAPPINGS.add(new NmsMapping("1.21.4", "v1_21_R3"));
-      MAPPINGS.add(new NmsMapping("1.21.2", "v1_21_R2"));
-      MAPPINGS.add(new NmsMapping("1.21", "v1_21_R1"));
-      MAPPINGS.add(new NmsMapping("1.20.5", "v1_20_R4"));
     }
 
     public static String get(Version version) {

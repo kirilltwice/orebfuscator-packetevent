@@ -1,5 +1,4 @@
 dependencies {
-    compileOnly(libs.protocollib)
     compileOnly(project(":orebfuscator-bukkit:orebfuscator-bukkit-nms"))
     compileOnly("org.spigotmc:spigot:26.1.2-R0.1-SNAPSHOT")
 }
@@ -9,7 +8,7 @@ java {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.release = 17
+    options.release = 25
 }
 
 configurations.named("compileClasspath") {

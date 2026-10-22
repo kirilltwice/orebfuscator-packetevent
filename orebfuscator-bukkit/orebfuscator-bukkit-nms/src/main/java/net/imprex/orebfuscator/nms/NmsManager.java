@@ -7,6 +7,7 @@ import dev.imprex.orebfuscator.interop.RegistryAccessor;
 import dev.imprex.orebfuscator.util.BlockPos;
 import java.util.concurrent.CompletableFuture;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -19,6 +20,12 @@ public interface NmsManager extends RegistryAccessor {
   CompletableFuture<@Nullable ChunkAccessor> getChunkFuture(World world, int chunkX, int chunkZ);
 
   @Nullable ChunkAccessor getChunkNow(World world, int chunkX, int chunkZ);
+
+  @Nullable ChunkAccessor getChunkIfLoaded(World world, int chunkX, int chunkZ);
+
+  @Nullable Entity getEntity(World world, int entityId);
+
+  void resendEntity(Player player, int entityId);
 
   void sendBlockUpdates(World world, Iterable<BlockPos> iterable);
 
