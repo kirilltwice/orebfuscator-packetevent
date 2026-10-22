@@ -8,6 +8,27 @@
 
 Orebfuscator empowers server owners to protect their server from X-Ray Clients and Texture Packs, all while offering a high degree of configurability. This is achieved through modifying network packets without altering your game world, guaranteeing a secure and reliable experience for users. With Orebfuscator, you can tailor the settings to suit your server's needs, ensuring precise control over the visibility of specific blocks. This means that not only does Orebfuscator safeguard your world's integrity, but it also empowers you to fine-tune your Anti-X-Ray measures for the best gameplay experience.
 
+## Изменения в этом форке (orebfuscator-packetevent)
+
+Форк [Imprex-Development/Orebfuscator](https://github.com/Imprex-Development/Orebfuscator), переведённый с ProtocolLib на [PacketEvents](https://github.com/retrooper/packetevents).
+
+**PacketEvents вместо ProtocolLib**
+* Плагин зависит от `packetevents` (2.14.0+) вместо ProtocolLib.
+* Пакет чанка разбирается и перезаписывается прямо в `ByteBuf`, без обёрток PacketEvents и без повторного кодирования.
+* Отложенные пакеты (чанки, батчи, обновления блоков, пакеты респавна) отправляются по очереди на каждый канал в исходном порядке, как раньше делал async-слушатель ProtocolLib.
+* Соседние чанки берутся без блокировок: на Paper и Folia сразу, на Spigot через асинхронную загрузку.
+
+**Скрытие за блоками**
+* Новый тег `tag(orebfuscator:block_entities)` включает все блоки с тайлами (сундуки, печки, спавнеры, бочки, шалкеры и т.д.). Они скрываются proximity-хайдером, пока игрок не увидит их лучом (`rayCastCheck`).
+* Новый `entityHider` в proximity-конфиге скрывает сущности и игроков за блоками: удаляет их у клиента и отбрасывает их пакеты, а при появлении в зоне видимости отправляет заново. Таб-лист и `canSee` не затрагиваются.
+* Всегда видимы: снаряды, молнии, дракон, светящиеся сущности, свой транспорт и пассажиры, а также всё ближе 4 блоков.
+* Миграция конфига до версии 7 сама включает `rayCastCheck`, `entityHider` и добавляет тег тайлов. Старый конфиг сохраняется в `config-old.yml`.
+
+**Поддержка версий и сборка**
+* Только Minecraft 1.21.11 и новее (NMS-адаптеры `v1_21_R7` и `v26_1`), только Java 25.
+* Удалены модуль Fabric, bStats и NMS-адаптеры ниже 1.21.11.
+* Spigot, Paper и Folia API обновлены до 1.21.11, SpecialSource до 1.11.6.
+
 ### Features
 * Seamless Integration: Plug & Play functionality for effortless use.
 * Extensive Configuration: Highly customizable settings to tailor the experience to your liking.
