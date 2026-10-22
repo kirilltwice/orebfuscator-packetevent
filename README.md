@@ -8,26 +8,26 @@
 
 Orebfuscator empowers server owners to protect their server from X-Ray Clients and Texture Packs, all while offering a high degree of configurability. This is achieved through modifying network packets without altering your game world, guaranteeing a secure and reliable experience for users. With Orebfuscator, you can tailor the settings to suit your server's needs, ensuring precise control over the visibility of specific blocks. This means that not only does Orebfuscator safeguard your world's integrity, but it also empowers you to fine-tune your Anti-X-Ray measures for the best gameplay experience.
 
-## Изменения в этом форке (orebfuscator-packetevent)
+## Changes in this fork (orebfuscator-packetevent)
 
-Форк [Imprex-Development/Orebfuscator](https://github.com/Imprex-Development/Orebfuscator), переведённый с ProtocolLib на [PacketEvents](https://github.com/retrooper/packetevents).
+A fork of [Imprex-Development/Orebfuscator](https://github.com/Imprex-Development/Orebfuscator) that has been migrated from ProtocolLib to [PacketEvents](https://github.com/retrooper/packetevents).
 
-**PacketEvents вместо ProtocolLib**
-* Плагин зависит от `packetevents` (2.14.0+) вместо ProtocolLib.
-* Пакет чанка разбирается и перезаписывается прямо в `ByteBuf`, без обёрток PacketEvents и без повторного кодирования.
-* Отложенные пакеты (чанки, батчи, обновления блоков, пакеты респавна) отправляются по очереди на каждый канал в исходном порядке, как раньше делал async-слушатель ProtocolLib.
-* Соседние чанки берутся без блокировок: на Paper и Folia сразу, на Spigot через асинхронную загрузку.
+**PacketEvents instead of ProtocolLib**
+* The plugin depends on `packetevents` (2.14.0+) instead of ProtocolLib.
+* Chunk packets are parsed and rewritten directly in the `ByteBuf`, without PacketEvents wrappers and without re-encoding.
+* Delayed packets (chunks, chunk batches, block updates, respawn packets) are sent through a per-channel queue in their original order, just like the old ProtocolLib async listener did.
+* Neighboring chunks are fetched without blocking: immediately on Paper and Folia, and through asynchronous loading on Spigot.
 
-**Скрытие за блоками**
-* Новый тег `tag(orebfuscator:block_entities)` включает все блоки с тайлами (сундуки, печки, спавнеры, бочки, шалкеры и т.д.). Они скрываются proximity-хайдером, пока игрок не увидит их лучом (`rayCastCheck`).
-* Новый `entityHider` в proximity-конфиге скрывает сущности и игроков за блоками: удаляет их у клиента и отбрасывает их пакеты, а при появлении в зоне видимости отправляет заново. Таб-лист и `canSee` не затрагиваются.
-* Всегда видимы: снаряды, молнии, дракон, светящиеся сущности, свой транспорт и пассажиры, а также всё ближе 4 блоков.
-* Миграция конфига до версии 7 сама включает `rayCastCheck`, `entityHider` и добавляет тег тайлов. Старый конфиг сохраняется в `config-old.yml`.
+**Hiding behind blocks**
+* The new `tag(orebfuscator:block_entities)` tag contains every block with a block entity (chests, furnaces, spawners, barrels, shulker boxes, etc.). They are hidden by the proximity hider until the player can actually see them (`rayCastCheck`).
+* The new `entityHider` option in proximity configs hides entities and players behind blocks: it removes them on the client, drops their packets and resends them once they become visible. The tab list and `canSee` are not affected.
+* Always visible: projectiles, lightning, the ender dragon, glowing entities, the player's own vehicle and passengers, and everything closer than 4 blocks.
+* Config migration to version 7 automatically enables `rayCastCheck` and `entityHider` and adds the block entity tag. The previous config is saved as `config-old.yml`.
 
-**Поддержка версий и сборка**
-* Только Minecraft 1.21.11 и новее (NMS-адаптеры `v1_21_R7` и `v26_1`), только Java 25.
-* Удалены модуль Fabric, bStats и NMS-адаптеры ниже 1.21.11.
-* Spigot, Paper и Folia API обновлены до 1.21.11, SpecialSource до 1.11.6.
+**Version support and build**
+* Minecraft 1.21.11 and newer only (NMS adapters `v1_21_R7` and `v26_1`), Java 25 only.
+* Removed the Fabric module, bStats and all NMS adapters below 1.21.11.
+* Spigot, Paper and Folia API updated to 1.21.11, SpecialSource updated to 1.11.6.
 
 ### Features
 * Seamless Integration: Plug & Play functionality for effortless use.
